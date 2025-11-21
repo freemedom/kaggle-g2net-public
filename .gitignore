@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# --- Aggiunte per Mac, Windows e Data Science ---
+
+# File di sistema (spazzatura)
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints (salvataggi automatici)
+.ipynb_checkpoints/
+
+# Cartelle Dati (NON caricare mai su GitHub)
+data/
+*.csv
+*.zip
+*.parquet
+
+# Modelli pesanti
+models/
+*.pt
+*.h5
+*.keras
