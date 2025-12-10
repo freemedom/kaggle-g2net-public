@@ -13,7 +13,8 @@ torchsummary==1.5.1
 kaggle==1.5.10
 
 # ===== 基础科学计算 =====
-numpy==1.19.1
+# 注意：numpy 1.19.1 在某些环境中无法构建，已更新到 1.19.5（最小兼容版本）
+numpy==1.19.5
 scipy==1.4.1
 pandas==1.2.3
 scikit-learn==0.23.2
@@ -117,3 +118,5 @@ typing-extensions==3.7.4.3
 # 3. Kaggle 环境通常已预装 PyTorch，无需重复安装
 #
 # 4. 某些包可能需要系统级依赖（如 libsndfile 用于 soundfile）
+#
+# 5. 如果遇到 numpy 构建错误，已更新到 1.19.5（从 1.19.1）以修复构建问题
