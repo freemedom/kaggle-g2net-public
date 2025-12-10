@@ -4,7 +4,7 @@
 
 # ===== 核心依赖（从 pip 部分） =====
 nnaudio==0.2.4
-timm==0.4.13
+timm==0.4.12
 einops==0.3.2
 colorednoise==1.1.1
 complexpytorch==0.3
@@ -111,8 +111,8 @@ typing-extensions==3.7.4.3
 # 1. 如果遇到 protobuf/tensorboard 兼容性问题，尝试：
 #    pip install "protobuf<4.22" tensorboard==2.14.0
 # 
-# 2. 如果遇到 timm 导入错误，确保版本为 0.4.13：
-#    pip install timm==0.4.13
+# 2. 如果遇到 timm 导入错误，确保版本为 0.4.12：
+#    pip install timm==0.4.12
 #
 # 3. Kaggle 环境通常已预装 PyTorch，无需重复安装
 #
