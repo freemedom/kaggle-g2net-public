@@ -26,3 +26,6 @@ parallel_qsub.py
 qsub.py
 *.job*
 submission.csv
+
+
+.specstory/
