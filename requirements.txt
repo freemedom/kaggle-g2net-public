@@ -30,8 +30,8 @@ pandas==1.2.3
 # ===== 深度学习工具 =====
 transformers==4.6.1
 huggingface-hub==0.0.10
-tensorboard==2.2.1
-tensorboard-plugin-wit==1.6.0
+# tensorboard==2.2.1
+# tensorboard-plugin-wit==1.6.0
 
 # ===== 图像处理 =====
 opencv-python==3.4.2
