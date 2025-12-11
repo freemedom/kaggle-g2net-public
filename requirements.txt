@@ -75,8 +75,8 @@ certifi==2021.5.30
 pyyaml==5.3.1
 toml==0.10.1
 
-# ===== protobuf（注意版本兼容性，解决 MessageFactory 错误） =====
-protobuf==3.13.0
+# ===== protobuf（注意版本兼容性，解决 MessageFactory/TypeIs 等错误） =====
+protobuf==3.20.3  # 兼容 tensorboard 2.14 / torch utils
 grpcio==1.31.0
 
 # ===== 其他依赖 =====
@@ -94,7 +94,7 @@ decorator==4.4.2
 cachetools==4.1.1
 filelock==3.0.12
 fsspec==2021.7.0
-typing-extensions==3.7.4.3
+typing-extensions==4.12.2  # 升级以支持 ParamSpec/TypeIs，兼容 Py3.11 与 Torch
 
 # ===== 代码质量工具（可选） =====
 # autopep8==1.5.4
