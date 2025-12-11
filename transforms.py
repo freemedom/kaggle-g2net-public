@@ -16,6 +16,7 @@ import pywt
 
 
 class AudioTransform:
+    """基础变换基类：支持概率生效。always_apply=True 时必定执行，否则以概率 p 执行。"""
     def __init__(self, always_apply=False, p=0.5):
         self.always_apply = always_apply
         self.p = p
@@ -48,6 +49,7 @@ class AudioTransform:
 
 
 class AudioTransformPerChannel(AudioTransform):
+    """按通道独立应用的变换基类：逐通道决定是否执行。"""
     def __init__(self, always_apply=False, p=0.5):
         super().__init__(always_apply=always_apply, p=p)
     
@@ -67,6 +69,7 @@ class AudioTransformPerChannel(AudioTransform):
 
 
 class Compose:
+    """顺序组合多个变换，依次作用于输入。"""
     def __init__(self, transforms: list):
         self.transforms = transforms
 
@@ -85,6 +88,7 @@ class Compose:
 
 
 class OneOf:
+    """随机选择一个变换并执行，用于互斥的数据增强。"""
     def __init__(self, transforms: list):
         self.transforms = transforms
 
@@ -106,6 +110,7 @@ class OneOf:
 '''Audio data augmentations
 '''
 def add_noise_snr(signal: np.ndarray, noise_shape: np.ndarray, snr: int):
+    """按目标 SNR 缩放噪声并叠加到信号（numpy 版本）。"""
     a_signal = np.sqrt(signal ** 2).max()
     a_noise = a_signal / (10 ** (snr / 20))
     a_white = np.sqrt(noise_shape ** 2).max()
@@ -113,6 +118,7 @@ def add_noise_snr(signal: np.ndarray, noise_shape: np.ndarray, snr: int):
 
 
 def add_noise_snr_torch(signal: torch.Tensor, noise_shape: torch.Tensor, snr: int):
+    """按目标 SNR 缩放噪声并叠加到信号（torch 版本，保持梯度）。"""
     a_signal = torch.sqrt(signal ** 2).max()
     a_noise = a_signal / (10 ** (snr / 20))
     a_white = torch.sqrt(noise_shape ** 2).max()
@@ -120,6 +126,7 @@ def add_noise_snr_torch(signal: torch.Tensor, noise_shape: torch.Tensor, snr: in
 
 
 def change_volume(signal: np.ndarray, db: int, mode: str = 'uniform'):
+    """按指定模式调整音量曲线：uniform/渐变/正弦/余弦等。"""
     if mode == "uniform":
         db_translated = 10 ** (db / 20)
     elif mode == "fade":
@@ -144,6 +151,7 @@ class Normalize(AudioTransform):
         self.factors = factors
 
     def apply(self, y: np.ndarray | torch.Tensor):
+        """按通道除以固定因子，常用于将不同探测器的量级对齐。"""
         for i in range(3):
             y[i] = y[i] / self.factors[i]
         return y
@@ -159,6 +167,7 @@ class Normalize2(AudioTransform):
         self.mode = mode
 
     def apply(self, y: np.ndarray | torch.Tensor):
+        """使用最大值或均值（正值部分）进行归一化。"""
         if self.mode == 'max':
             y = y / y.max()
         elif self.mode == 'mean':
@@ -174,6 +183,7 @@ class MinMaxScaler(AudioTransform):
         super().__init__(always_apply, p)
 
     def apply(self, y: np.ndarray):
+        """按通道缩放到 [-1,1]（除以绝对最大值）。"""
         for i in range(3):
             y[i] = y[i] / np.max(np.abs(y[i]))
         return y
@@ -188,6 +198,7 @@ class WhitenTorch(AudioTransformPerChannel):
         self.hann = torch.hann_window(signal_len, periodic=True, dtype=torch.float64)
 
     def apply(self, y: torch.Tensor):
+        """FFT 频域白化：除以幅值谱，再反变换，平衡频带能量。"""
         spec = fft(y*self.hann)
         mag = torch.sqrt(torch.real(spec*torch.conj(spec))) 
         return torch.real(ifft(spec/mag)).float() * np.sqrt(len(y)/2)
@@ -200,6 +211,7 @@ class GaussianNoiseSNR(AudioTransformPerChannel):
         self.max_snr = max_snr
 
     def apply(self, y: np.ndarray):
+        """为每个通道添加目标 SNR 的白噪声，提升鲁棒性。"""
         snr = np.random.uniform(self.min_snr, self.max_snr)
         white_noise = np.random.randn(len(y))
         return add_noise_snr(y, white_noise, snr)
@@ -212,6 +224,7 @@ class GaussianNoiseSNRTorch(AudioTransformPerChannel):
         self.max_snr = max_snr
 
     def apply(self, y: torch.Tensor):
+        """torch 版本，保留梯度；每通道添加随机 SNR 噪声。"""
         snr = np.random.uniform(self.min_snr, self.max_snr)
         white_noise = torch.randn(len(y))
         return add_noise_snr_torch(y, white_noise, snr)
@@ -229,6 +242,7 @@ class PinkNoiseSNR(AudioTransformPerChannel):
         self.exponent = exponent
 
     def apply(self, y: np.ndarray):
+        """添加粉/棕噪声（1/f^exponent），模拟环境噪声。"""
         snr = np.random.uniform(self.min_snr, self.max_snr)
         pink_noise = cn.powerlaw_psd_gaussian(self.exponent, len(y))
         return add_noise_snr(y, pink_noise, snr)
@@ -252,6 +266,7 @@ class AddNoiseSNR2(AudioTransform):
         self.noise_type = noise_type
 
     def apply(self, y: np.ndarray,):
+        """可指定通道与噪声类型（高斯/粉/棕），可随机挑选部分通道添加噪声。"""
         augmented = y.copy()
         if self.random_channel > 0:
             noise_chans = np.random.choice(self.target_channel, self.random_channel, replace=False)
@@ -281,6 +296,7 @@ class PitchShift(AudioTransform):
         self.sr = sr
 
     def apply(self, y: np.ndarray):
+        """随机移调，每通道执行，模拟频率偏移。"""
         ch = y.shape[0]
         n_steps = np.random.randint(-self.max_steps, self.max_steps)
         for i in range(ch):
@@ -303,6 +319,7 @@ class VolumeControl(AudioTransform):
         self.mode = mode
 
     def apply(self, y: np.ndarray):
+        """随机调节音量，支持多种时间曲线（均匀/渐变/正弦/余弦）。"""
         ch = y.shape[0]
         db = np.random.uniform(-self.db_limit, self.db_limit)
         for i in range(ch):
@@ -328,6 +345,7 @@ class BandPass(AudioTransformPerChannel):
             self.order, (self.lower, self.upper), btype='bandpass', fs=self.sr)
         
     def apply(self, y: np.ndarray):
+        """IIR 巴特沃斯带通滤波，保持给定频段，常用于抑制低/高频噪声。"""
         return scipy.signal.filtfilt(self._b, self._a, y)
 
 
@@ -353,6 +371,7 @@ class BandPass2(AudioTransform):
             self._filters.append([b, a])
         
     def apply(self, y: np.ndarray):
+        """多通道独立带通，每个通道可设不同频带。"""
         for ch, (b, a) in enumerate(self._filters):
             y[ch] = scipy.signal.filtfilt(b, a, y[ch])
         return y
@@ -372,6 +391,7 @@ class BandPassTorch(AudioTransformPerChannel):
         self.sr = sr
         
     def apply(self, y: torch.Tensor):
+        """torch 实现的带通，方便在 GPU 上与 autograd 结合。"""
         return bandpass_biquad(y, 
                                self.sr, 
                                (self.lower + self.upper) / 2,

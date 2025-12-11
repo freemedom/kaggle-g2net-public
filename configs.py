@@ -204,6 +204,14 @@ class Nspec12(Resized08aug4):
 
 
 class Nspec12arch0(Nspec12):
+    """
+    Nspec12的架构变体 - 使用DenseNet201作为backbone
+    
+    主要变化：
+    - 将backbone从EfficientNet-B2改为DenseNet201
+    - 使用更大的小波宽度（wavelet_width=8）
+    - 适合需要更强特征提取能力的场景
+    """
     name = 'nspec_12_arch_0'
     model_params = dict(
         model_name='densenet201',
@@ -270,6 +278,15 @@ class Nspec16(Resized08aug4):
 
 
 class Nspec16spec13(Nspec16):
+    """
+    Nspec16的频谱参数变体 - 限制频率范围
+    
+    主要变化：
+    - 降低最大频率到512 Hz（从1024 Hz）
+    - 带通滤波器范围改为12-360 Hz（更窄的频率范围）
+    - 使用4阶滤波器（order=4）提高滤波精度
+    - 适合专注于低频引力波信号的场景
+    """
     name = 'nspec_16_spec_13'
     model_params = dict(
         model_name='tf_efficientnet_b2',
@@ -304,6 +321,16 @@ class Nspec16spec13(Nspec16):
 
 
 class Nspec16arch17(Nspec16):
+    """
+    Nspec16的大模型变体 - 使用EfficientNet-B7-NS
+    
+    主要变化：
+    - 使用更大的EfficientNet-B7-NS模型（Noisy Student预训练）
+    - 不调整图像尺寸（resize_img=None），保持原始分辨率
+    - 减小batch_size到32以适应更大的模型
+    - 提高学习率到5e-4以加速大模型训练
+    - 适合有充足计算资源的场景
+    """
     name = 'nspec_16_arch_17'
     model_params = dict(
         model_name='tf_efficientnet_b7_ns',
@@ -326,6 +353,15 @@ class Nspec16arch17(Nspec16):
 
 
 class Nspec21(Resized08aug4):
+    """
+    使用CWT的中等规模配置 - Nspec21
+    
+    主要特点：
+    - 使用EfficientNet-B4-NS作为backbone（中等规模）
+    - 256个小波尺度（更高的频率分辨率）
+    - 图像尺寸256x1024（更宽的时间维度）
+    - 可训练的小波宽度，允许端到端优化
+    """
     name = 'nspec_21'
     model_params = dict(
         model_name='tf_efficientnet_b4_ns',
@@ -404,6 +440,15 @@ class Nspec22(Resized08aug4):
 
 
 class Nspec22aug1(Nspec22):
+    """
+    Nspec22的数据增强变体 - 添加波形翻转增强
+    
+    主要变化：
+    - 移除WaveNet块（wave_block='none'），简化架构
+    - 添加FlipWave增强（50%概率翻转波形）
+    - FlipWave可以增加数据多样性，提升模型泛化能力
+    - 适合需要更强数据增强的场景
+    """
     name = 'nspec_22_aug_1'
     model_params = Nspec22.model_params.copy()
     model_params['spec_params'] =dict(
@@ -431,6 +476,14 @@ class Nspec22aug1(Nspec22):
 
 
 class Nspec22arch2(Nspec22): 
+    """
+    Nspec22aug1的架构变体 - 使用EfficientNet-B6-NS
+    
+    主要变化：
+    - 将backbone从EfficientNet-B2升级到B6-NS
+    - 继承Nspec22aug1的数据增强策略
+    - 更大的模型容量，适合复杂模式识别
+    """
     name = 'nspec_22_arch_2'
     model_params = Nspec22aug1.model_params.copy()
     model_params['model_name'] = 'tf_efficientnet_b6_ns'
@@ -438,6 +491,14 @@ class Nspec22arch2(Nspec22):
 
 
 class Nspec22arch6(Nspec22):
+    """
+    Nspec22aug1的架构变体 - 使用DenseNet201
+    
+    主要变化：
+    - 使用DenseNet201作为backbone（密集连接架构）
+    - 降低学习率到2e-4以适应DenseNet的训练特性
+    - DenseNet通过特征重用提升参数效率
+    """
     name = 'nspec_22_arch_6'
     model_params = Nspec22aug1.model_params.copy()
     model_params['model_name'] = 'densenet201'
@@ -446,6 +507,14 @@ class Nspec22arch6(Nspec22):
 
 
 class Nspec22arch7(Nspec22):
+    """
+    Nspec22aug1的架构变体 - 使用EfficientNetV2-M
+    
+    主要变化：
+    - 使用EfficientNetV2-M（改进的EfficientNet架构）
+    - EfficientNetV2在训练速度和精度之间取得更好平衡
+    - 降低学习率到2e-4
+    """
     name = 'nspec_22_arch_7'
     model_params = Nspec22aug1.model_params.copy()
     model_params['model_name'] = 'tf_efficientnetv2_m'
@@ -454,6 +523,14 @@ class Nspec22arch7(Nspec22):
 
 
 class Nspec22arch10(Nspec22):
+    """
+    Nspec22aug1的架构变体 - 使用ResNet200D
+    
+    主要变化：
+    - 使用ResNet200D（深度残差网络，200层）
+    - 提高学习率到5e-4以加速深度网络训练
+    - ResNet200D适合需要极深网络的场景
+    """
     name = 'nspec_22_arch_10'
     model_params = Nspec22aug1.model_params.copy()
     model_params['model_name'] = 'resnet200d'
@@ -462,6 +539,15 @@ class Nspec22arch10(Nspec22):
 
 
 class Nspec22arch12(Nspec22):
+    """
+    Nspec22aug1的架构变体 - 使用EfficientNetV2-L
+    
+    主要变化：
+    - 使用EfficientNetV2-L（大型EfficientNetV2模型）
+    - 减小batch_size到32以适应大模型
+    - 降低学习率到2e-4
+    - 适合有充足显存的场景
+    """
     name = 'nspec_22_arch_12'
     model_params = Nspec22aug1.model_params.copy()
     model_params['model_name'] = 'tf_efficientnetv2_l'
@@ -471,6 +557,14 @@ class Nspec22arch12(Nspec22):
 
 
 class Nspec23(Nspec22):
+    """
+    使用CNN频谱图的配置 - Nspec23
+    
+    主要特点：
+    - 使用CNNSpectrogram替代WaveNet（可学习的CNN时频变换）
+    - 使用多尺度卷积核（32, 16, 4）捕获不同时间尺度的特征
+    - CNN频谱图比固定变换更灵活，可以学习最优表示
+    """
     name = 'nspec_23'
     model_params = dict(
         model_name='tf_efficientnet_b2',
@@ -488,6 +582,14 @@ class Nspec23(Nspec22):
 
 
 class Nspec23arch3(Nspec23):
+    """
+    Nspec23的架构和参数变体
+    
+    主要变化：
+    - 使用EfficientNet-B6-NS作为backbone
+    - 增大第一个卷积核到64（从32），捕获更长的时间模式
+    - 继承Nspec22aug1的数据增强策略
+    """
     name = 'nspec_23_arch_3'
     model_params = Nspec23.model_params.copy()
     model_params['spec_params'] = dict(
@@ -499,6 +601,14 @@ class Nspec23arch3(Nspec23):
 
 
 class Nspec23arch5(Nspec23):
+    """
+    Nspec23arch3的架构变体 - 使用EfficientNetV2-M
+    
+    主要变化：
+    - 将backbone从EfficientNet-B6-NS改为EfficientNetV2-M
+    - 提高学习率到5e-4
+    - EfficientNetV2-M在精度和速度之间取得平衡
+    """
     name = 'nspec_23_arch_5'
     model_params = Nspec23arch3.model_params.copy()
     model_params['model_name'] = 'tf_efficientnetv2_m'
@@ -507,6 +617,15 @@ class Nspec23arch5(Nspec23):
 
 
 class Nspec25(Nspec22):
+    """
+    WaveNet频谱图的改进配置 - Nspec25
+    
+    主要特点：
+    - 使用更大的基础滤波器（256，从128增加）
+    - 添加下采样（downsample=4）减少计算量
+    - 移除WaveNet块（wave_block='none'），简化架构
+    - 继承Nspec22aug1的数据增强策略
+    """
     name = 'nspec_25'
     model_params = dict(
         model_name='tf_efficientnet_b2',
@@ -527,12 +646,28 @@ class Nspec25(Nspec22):
 
 
 class Nspec25arch1(Nspec25):
+    """
+    Nspec25的架构变体 - 使用EfficientNet-B3-NS
+    
+    主要变化：
+    - 将backbone从EfficientNet-B2升级到B3-NS
+    - 保持Nspec25的所有其他配置不变
+    """
     name = 'nspec_25_arch_1'
     model_params = Nspec25.model_params
     model_params['model_name'] = 'tf_efficientnet_b3_ns'
 
 
 class Nspec30(Nspec22):
+    """
+    使用分离通道WaveNet的配置 - Nspec30
+    
+    主要特点：
+    - 使用separate_channel=True，为每个输入通道单独处理
+    - 更深的WaveNet层（10, 10, 10），每层10个块
+    - 适合需要精细处理多通道信号的场景
+    - 每个通道独立学习时频表示，增强模型表达能力
+    """
     name = 'nspec_30'
     model_params = dict(
         model_name='tf_efficientnet_b2',
@@ -555,6 +690,14 @@ class Nspec30(Nspec22):
 
 
 class Nspec30arch2(Nspec30):
+    """
+    Nspec30的架构和参数变体
+    
+    主要变化：
+    - 使用EfficientNet-B6-NS作为backbone
+    - 减少WaveNet层数（8, 8, 8），每层8个块
+    - 在模型容量和计算效率之间取得平衡
+    """
     name = 'nspec_30_arch_2'
     model_params = Nspec30.model_params.copy()
     model_params['spec_params'] = dict(
@@ -648,6 +791,16 @@ class Seq00(Resized08aug4):
 
 
 class Seq02(Seq00):
+    """
+    1D ResNet的轻量级变体 - Seq02
+    
+    主要变化：
+    - 减少基础滤波器到32（从64）
+    - 减少分组卷积组数到32（从64）
+    - 移除Dropout（dropout=0.0）
+    - 调整带通滤波器范围到24-300 Hz
+    - 适合需要更快训练速度的场景
+    """
     name = 'seq_02'
     model_params = Seq00.model_params.copy()
     model_params.update(dict(
@@ -672,6 +825,17 @@ class Seq02(Seq00):
 
 
 class Seq03(Seq02):
+    """
+    1D ResNet的高容量变体 - Seq03
+    
+    主要变化：
+    - 增加基础滤波器到128（从32）
+    - 调整带通滤波器范围到30-300 Hz
+    - 添加高斯噪声增强（50%概率）
+    - 增加训练轮数到8
+    - 使用梯度裁剪（max_grad_norm=1000）稳定训练
+    - 适合需要更强模型容量的场景
+    """
     name = 'seq_03'
     model_params = Seq02.model_params.copy()
     model_params.update(dict(
@@ -702,6 +866,15 @@ class Seq03(Seq02):
 
 
 class Seq03aug3(Seq03):
+    """
+    Seq03的数据增强变体 - 使用波形翻转
+    
+    主要变化：
+    - 用FlipWave替代GaussianNoiseSNR增强
+    - FlipWave通过翻转波形增加数据多样性
+    - 减少训练轮数到5（数据增强可能加速收敛）
+    - 适合需要不同增强策略的场景
+    """
     name = 'seq_03_aug_3'
     transforms = dict(
         train=Compose([
@@ -723,6 +896,15 @@ class Seq03aug3(Seq03):
 
 
 class Seq09(Seq02):
+    """
+    1D DenseNet配置 - Seq09
+    
+    主要特点：
+    - 使用DenseNet121-1D架构（密集连接的1D网络）
+    - DenseNet通过特征重用提升参数效率
+    - 直接处理时域信号，无需时频变换
+    - 使用默认的DenseNet121-1D参数
+    """
     name = 'seq_09'
     model = densenet121_1d
     model_params = dict()
@@ -768,6 +950,16 @@ class Seq12(Seq02):
 
 
 class Seq12arch4(Seq12):
+    """
+    Seq12的深度变体 - 更深的WaveNet架构
+    
+    主要变化：
+    - 增加网络深度：8层（从4层）
+    - 更细粒度的隐藏维度变化（128->128->256->256->512->512->1024->1024）
+    - 每层使用不同数量的WaveNet块（12, 10, 8, 8, 6, 6, 4, 2）
+    - 设置kernel_size=16
+    - 适合需要极深网络的复杂模式识别场景
+    """
     name = 'seq_12_arch_4'
     model_params = Seq12.model_params.copy()
     model_params.update(dict(
@@ -800,6 +992,14 @@ class Pseudo06(Nspec12):
 
 
 class Pseudo07(Nspec16):
+    """
+    伪标签训练配置 - 基于Nspec16
+    
+    主要特点：
+    - 使用Nspec16模型的预测结果作为伪标签
+    - 从头训练（weight_path=None）
+    - 使用软标签（hard_label=False）
+    """
     name = 'pseudo_07'
     weight_path = None
     pseudo_labels = dict(
@@ -810,6 +1010,13 @@ class Pseudo07(Nspec16):
 
 
 class Pseudo10(Nspec16spec13):
+    """
+    伪标签训练配置 - 基于Nspec16spec13
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）提升泛化能力
+    - 增加训练轮数到10以充分利用伪标签数据
+    """
     name = 'pseudo_10'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -822,6 +1029,13 @@ class Pseudo10(Nspec16spec13):
 
 
 class Pseudo12(Nspec12arch0):
+    """
+    伪标签训练配置 - 基于Nspec12arch0（DenseNet201）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_12'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -834,6 +1048,14 @@ class Pseudo12(Nspec12arch0):
 
 
 class Pseudo13(MultiInstance04):
+    """
+    伪标签训练配置 - 基于MultiInstance04（多实例学习）
+    
+    主要特点：
+    - 使用多实例学习模型的预测结果作为伪标签
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_13'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -846,6 +1068,14 @@ class Pseudo13(MultiInstance04):
 
 
 class Pseudo14(Nspec16arch17):
+    """
+    伪标签训练配置 - 基于Nspec16arch17（EfficientNet-B7-NS）
+    
+    主要特点：
+    - 使用大模型的预测结果作为伪标签
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_14'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -858,6 +1088,14 @@ class Pseudo14(Nspec16arch17):
 
 
 class Pseudo15(Nspec22aug1):
+    """
+    伪标签训练配置 - 基于Nspec22aug1（WaveNet + 翻转增强）
+    
+    主要特点：
+    - 使用WaveNet时频变换模型的预测结果
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_15'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -870,6 +1108,13 @@ class Pseudo15(Nspec22aug1):
 
 
 class Pseudo16(Nspec22arch2):
+    """
+    伪标签训练配置 - 基于Nspec22arch2（EfficientNet-B6-NS）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_16'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -882,6 +1127,14 @@ class Pseudo16(Nspec22arch2):
 
 
 class Pseudo17(Nspec23arch3):
+    """
+    伪标签训练配置 - 基于Nspec23arch3（CNN频谱图 + EfficientNet-B6-NS）
+    
+    主要特点：
+    - 使用CNN频谱图模型的预测结果
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_17'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -894,6 +1147,13 @@ class Pseudo17(Nspec23arch3):
 
 
 class Pseudo18(Nspec21):
+    """
+    伪标签训练配置 - 基于Nspec21（EfficientNet-B4-NS + CWT）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_18'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -906,6 +1166,13 @@ class Pseudo18(Nspec21):
 
 
 class Pseudo19(Nspec22arch6):
+    """
+    伪标签训练配置 - 基于Nspec22arch6（DenseNet201 + WaveNet）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_19'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -918,6 +1185,13 @@ class Pseudo19(Nspec22arch6):
 
 
 class Pseudo21(Nspec22arch7):
+    """
+    伪标签训练配置 - 基于Nspec22arch7（EfficientNetV2-M + WaveNet）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_21'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -930,6 +1204,13 @@ class Pseudo21(Nspec22arch7):
 
 
 class Pseudo22(Nspec23arch5):
+    """
+    伪标签训练配置 - 基于Nspec23arch5（EfficientNetV2-M + CNN频谱图）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_22'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -942,6 +1223,14 @@ class Pseudo22(Nspec23arch5):
 
 
 class Pseudo23(Nspec22arch12):
+    """
+    伪标签训练配置 - 基于Nspec22arch12（EfficientNetV2-L + WaveNet）
+    
+    主要特点：
+    - 使用大模型的预测结果作为伪标签
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_23'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -954,6 +1243,14 @@ class Pseudo23(Nspec22arch12):
 
 
 class Pseudo24(Nspec30arch2):
+    """
+    伪标签训练配置 - 基于Nspec30arch2（分离通道WaveNet）
+    
+    主要特点：
+    - 使用分离通道WaveNet模型的预测结果
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_24'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -966,6 +1263,13 @@ class Pseudo24(Nspec30arch2):
 
 
 class Pseudo25(Nspec25arch1):
+    """
+    伪标签训练配置 - 基于Nspec25arch1（改进的WaveNet频谱图）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_25'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -978,6 +1282,14 @@ class Pseudo25(Nspec25arch1):
 
 
 class Pseudo26(Nspec22arch10):
+    """
+    伪标签训练配置 - 基于Nspec22arch10（ResNet200D + WaveNet）
+    
+    主要特点：
+    - 使用深度ResNet模型的预测结果
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 增加训练轮数到10
+    """
     name = 'pseudo_26'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -990,6 +1302,13 @@ class Pseudo26(Nspec22arch10):
 
 
 class PseudoSeq03(Seq09):
+    """
+    伪标签训练配置 - 基于Seq09（1D DenseNet）
+    
+    主要特点：
+    - 使用1D序列模型的预测结果作为伪标签
+    - 使用平滑标签损失（smooth_eps=0.025）
+    """
     name = 'pseudo_seq_03'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -1000,6 +1319,12 @@ class PseudoSeq03(Seq09):
 
 
 class PseudoSeq04(Seq03aug3):
+    """
+    伪标签训练配置 - 基于Seq03aug3（1D ResNet + 翻转增强）
+    
+    主要特点：
+    - 使用平滑标签损失（smooth_eps=0.025）
+    """
     name = 'pseudo_seq_04'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
@@ -1010,6 +1335,14 @@ class PseudoSeq04(Seq03aug3):
 
 
 class PseudoSeq07(Seq12arch4):
+    """
+    伪标签训练配置 - 基于Seq12arch4（深度1D WaveNet）
+    
+    主要特点：
+    - 使用深度WaveNet模型的预测结果
+    - 使用平滑标签损失（smooth_eps=0.025）
+    - 训练6个epoch（相比其他伪标签配置更少）
+    """
     name = 'pseudo_seq_07'
     criterion = BCEWithLogitsLoss(smooth_eps=0.025)
     pseudo_labels = dict(
