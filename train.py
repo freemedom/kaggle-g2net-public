@@ -78,6 +78,8 @@ if __name__ == "__main__":
     if opt.wait > 0:
         LOGGER(f'Waiting for {opt.wait} sec.')
         time.sleep(opt.wait)
+    
+    print('pd.read_csv(cfg.train_path)')
 
     ''' Prepare data '''
     seed_everything(cfg.seed, cfg.deterministic)
