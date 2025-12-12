@@ -5,6 +5,7 @@ import requests
 
 
 def print_config(cfg, logger=None):
+    """打印配置对象中的关键字段，支持写入外部 logger。"""
 
     def _print(text):
         if logger is None:
@@ -38,10 +39,11 @@ def print_config(cfg, logger=None):
 
 
 def notify_me(text):
-    # Sample: LINE notify API
-    # line_notify_token = '{Your token}'
+    """通知占位函数：可在此接入企业微信/飞书/钉钉/Line 等推送。"""
+    # 示例：LINE Notify
+    # line_notify_token = '{Your token}'  # 放置你的 token
     # line_notify_api = 'https://notify-api.line.me/api/notify'
     # headers = {'Authorization': f'Bearer {line_notify_token}'}
-    # data = {'message': '\n' + text}
+    # data = {'message': '\n' + text}     # 在消息前加换行方便阅读
     # requests.post(line_notify_api, headers=headers, data=data)
     pass

@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # ========== 获取硬件配置 ==========
     # HW_CFG 格式：(CPU核心数, RAM大小(GB), GPU数量, GPU显存总量(GB))
-    N_CPU, N_RAM, N_GPU, N_GRAM = HW_CFG[opt.hardware]
+    N_CPU, N_RAM, N_GPU, N_GRAM = HW_CFG[opt.hardware] # N_GPU, N_GRAM好像并没有用
     if opt.cache:
         # 缓存大小限制为 RAM 的一半，避免内存溢出
         LOGGER(f'最大缓存大小设置为 {N_RAM//2} GB')

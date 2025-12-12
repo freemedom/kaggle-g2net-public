@@ -24,7 +24,7 @@ from training_extras import make_tta_dataloader
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()  # 解析命令行参数以选择配置、硬件、推理/训练模式等
     parser.add_argument("--config", type=str, default='Baseline',
                         help="config name in configs.py")
     parser.add_argument("--hardware", type=str, default='A100',
@@ -47,17 +47,17 @@ if __name__ == "__main__":
     pprint(opt)
 
     ''' Configure hardware '''
-    N_CPU, N_RAM, N_GPU, N_GRAM = HW_CFG[opt.hardware]
+    N_CPU, N_RAM, N_GPU, N_GRAM = HW_CFG[opt.hardware]  # 根据硬件预设，确定可用资源
     if len(opt.gpu) == 0:
         opt.gpu = None # use all GPUs
     elif len(opt.gpu) > N_GPU:
         raise ValueError(f'Maximum GPUs allowed is {N_GPU}')
 
     ''' Configure path '''
-    cfg = eval(opt.config)
+    cfg = eval(opt.config)  # 动态获取 configs.py 中的配置类实例
     assert cfg.pseudo_labels is None
     export_dir = Path('results') / cfg.name
-    export_dir.mkdir(parents=True, exist_ok=True)
+    export_dir.mkdir(parents=True, exist_ok=True)  # 结果目录
 
     ''' Configure logger '''
     log_items = [
@@ -82,13 +82,13 @@ if __name__ == "__main__":
     ''' Prepare data '''
     seed_everything(cfg.seed, cfg.deterministic)
     print_config(cfg, LOGGER)
-    train = pd.read_csv(cfg.train_path)
-    test = pd.read_csv(cfg.test_path)
+    train = pd.read_csv(cfg.train_path)  # 训练集 CSV（包含 path, target）
+    test = pd.read_csv(cfg.test_path)    # 测试集 CSV（只含 path）
     if cfg.debug:
         train = train.iloc[:10000]
         test = test.iloc[:1000]
     splitter = cfg.splitter
-    fold_iter = list(splitter.split(X=train, y=train['target']))
+    fold_iter = list(splitter.split(X=train, y=train['target']))  # 预先生成全部折分
     
     '''
     Training
@@ -106,6 +106,7 @@ if __name__ == "__main__":
             test_cache = pickle.load(f)
     
     for fold, (train_idx, valid_idx) in enumerate(fold_iter):
+        # 中文：支持 limit_fold 只跑指定折；inference 模式直接跳过训练；skip_existing 避免覆盖已有模型
         
         if opt.limit_fold >= 0 and fold != opt.limit_fold:
             continue  # skip fold
@@ -122,6 +123,7 @@ if __name__ == "__main__":
         train_fold = train.iloc[train_idx]
         valid_fold = train.iloc[valid_idx]
 
+        # 中文：打印当前折的正样本比例与样本量，便于检查折分是否均衡
         LOGGER(f'train positive: {train_fold.target.values.mean(0)} ({len(train_fold)})')
         LOGGER(f'valid positive: {valid_fold.target.values.mean(0)} ({len(valid_fold)})')
 
@@ -134,6 +136,19 @@ if __name__ == "__main__":
             transforms=cfg.transforms['test'], cache=train_cache, is_test=True,
             **cfg.dataset_params)
 
+        # 中文：DataLoader 配置说明
+        # - num_workers=0：主进程加载数据，避免多进程问题（Windows/调试场景）
+        # - pin_memory=False：不使用固定内存（pinned memory）
+        #   * pin_memory=True 时，数据固定在内存中，CPU→GPU 传输更快，但占用更多内存
+        #   * pin_memory=False 时，使用常规内存，传输较慢但更省内存，适合调试或内存受限场景
+        '''
+        普通内存（页式内存）：
+        操作系统可能将数据从物理内存换到磁盘（虚拟内存/swap）
+        GPU 无法直接访问虚拟内存，需要先换回物理内存，传输较慢
+        固定内存（pinned memory）：
+        告诉操作系统“这段内存不要换出”，始终保持在物理内存中
+        GPU 可通过 DMA（直接内存访问）直接从物理内存读取，传输更快
+        '''
         train_loader = D.DataLoader(
             train_data, batch_size=cfg.batch_size, shuffle=True,
             num_workers=0, pin_memory=False)
@@ -141,9 +156,10 @@ if __name__ == "__main__":
             valid_data, batch_size=cfg.batch_size, shuffle=False,
             num_workers=0, pin_memory=False)
 
-        model = cfg.model(**cfg.model_params)
+        model = cfg.model(**cfg.model_params)  # 构建模型
 
         # Load snapshot
+        # 中文：可选加载预训练/历史权重，若传入目录则按折号加载对应权重
         if cfg.weight_path is not None:
             if cfg.weight_path.is_dir():
                 weight_path = cfg.weight_path / f'fold{fold}.pt'
@@ -155,6 +171,7 @@ if __name__ == "__main__":
             model.load_state_dict(weight, strict=False)
             del weight; gc.collect()
         # Load SeqCNN model
+        # 中文：若模型包含子模块路径，则分别加载 CNN/Seq 子模型；部分模型支持 freeze 冻结
         if hasattr(model, 'cnn_path'):
             checkpoint = torch.load(model.cnn_path / f'fold{fold}.pt')['model']
             model.load_cnn(checkpoint)
@@ -165,8 +182,9 @@ if __name__ == "__main__":
             model.freeze_seq()
             model.freeze_cnn()
 
-        optimizer = cfg.optimizer(model.parameters(), **cfg.optimizer_params)
-        scheduler = cfg.scheduler(optimizer, **cfg.scheduler_params)
+        optimizer = cfg.optimizer(model.parameters(), **cfg.optimizer_params)  # 优化器
+        scheduler = cfg.scheduler(optimizer, **cfg.scheduler_params)          # 学习率调度器
+        # 中文：封装训练所需参数，直接传递给 TorchTrainer
         FIT_PARAMS = {
             'loader': train_loader,
             'loader_valid': valid_loader,
@@ -194,8 +212,9 @@ if __name__ == "__main__":
         if not cfg.debug:
             notify_me(f'[{cfg.name}:fold{opt.limit_fold}]\nTraining started.')
         try:
+            # 中文：实例化训练器（serial 区分折次、device 指定 GPU/CPU），开始单折训练
             trainer = TorchTrainer(model, serial=f'fold{fold}', device=opt.gpu)
-            trainer.fit(**FIT_PARAMS)
+            trainer.fit(**FIT_PARAMS)  # 训练一个折
         except Exception as e:
             err = traceback.format_exc()
             LOGGER(err)
@@ -205,6 +224,7 @@ if __name__ == "__main__":
                     'Training stopped due to:', 
                     f'{traceback.format_exception_only(type(e), e)}'
                 ]))
+        # 中文：每折结束主动释放内存/显存，避免长时间训练累积占用
         del model, trainer, train_data, valid_data; gc.collect()
         torch.cuda.empty_cache()
 
@@ -212,6 +232,9 @@ if __name__ == "__main__":
     '''
     Inference
     '''
+    # 预测缓存：
+    # predictions[fold, sample, 0] 存每折对 test 的预测
+    # outoffolds[sample, 0]        存 OOF 预测（与训练折分一致）
     predictions = np.full((cfg.cv, len(test), 1), 0.5, dtype=np.float32)
     outoffolds = np.full((len(train), 1), 0.5, dtype=np.float32)
     test_data = cfg.dataset(
@@ -243,7 +266,7 @@ if __name__ == "__main__":
             test_data, batch_size=cfg.batch_size, shuffle=False, 
             num_workers=0, pin_memory=False)
 
-        model = cfg.model(**cfg.model_params)
+        model = cfg.model(**cfg.model_params)  # 重建模型并加载权重
         checkpoint = torch.load(export_dir/f'fold{fold}.pt', 'cpu')
         fit_state_dict(checkpoint['model'], model)
         try:
@@ -256,9 +279,9 @@ if __name__ == "__main__":
         del checkpoint; gc.collect()
 
         trainer = TorchTrainer(model, serial=f'fold{fold}', device=opt.gpu)
-        trainer.register(hook=cfg.hook, callbacks=cfg.callbacks)
+        trainer.register(hook=cfg.hook, callbacks=cfg.callbacks)  # 注册钩子与回调（早停/保存等）
 
-        if opt.tta: # flip wave TTA
+        if opt.tta: # flip wave TTA：对 test/valid 各跑两次，取平均
             tta_transform = Compose(
                 cfg.transforms['test'].transforms + [FlipWave(always_apply=True)])
             LOGGER(f'[{fold}] pred0 {test_loader.dataset.transforms}')
@@ -284,8 +307,8 @@ if __name__ == "__main__":
             prediction_fold = trainer.predict(test_loader, progress_bar=opt.progress_bar)
             outoffold = trainer.predict(valid_loader, progress_bar=opt.progress_bar)
 
-        predictions[fold] = prediction_fold
-        outoffolds[valid_idx] = outoffold
+        predictions[fold] = prediction_fold        # test 预测：按折存放，后续可对折/模型求平均
+        outoffolds[valid_idx] = outoffold          # OOF (out-of-fold) 预测：对每折验证集的预测，写回原始索引；用于计算全体验证集的整体指标（如全数据 AUC）
 
         del model, trainer, valid_data; gc.collect()
         torch.cuda.empty_cache()
@@ -298,11 +321,11 @@ if __name__ == "__main__":
             np.save(export_dir/'outoffolds', outoffolds)
             np.save(export_dir/'predictions', predictions)
 
-    LOGGER(f'scores: {scores}')
+    LOGGER(f'scores: {scores}')  # 各折最佳分数
     LOGGER(f'mean +- std: {np.mean(scores):.5f} +- {np.std(scores):.5f}')
     if not cfg.debug:
         notify_me('\n'.join([
             f'[{cfg.name}:fold{opt.limit_fold}]',
             'Training has finished successfully.',
             f'mean +- std: {np.mean(scores):.5f} +- {np.std(scores):.5f}'
-        ]))
+        ]))  # 训练完成后通知（如开启推送）

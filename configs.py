@@ -40,7 +40,8 @@ INPUT_DIR = Path('input/').expanduser()
 # 格式：(CPU核心数, RAM大小(GB), GPU数量, GPU显存总量(GB))
 HW_CFG = {
     'RTX3090': (16, 128, 1, 24), # CPU cores, RAM amount, GPU count, GPU RAM total
-    'A100': (9, 60, 1, 40), 
+    'A100': (9, 60, 1, 40),
+    'Kaggle': (4, 30, 1, 16),
 }
 
 
