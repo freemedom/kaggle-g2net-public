@@ -24,6 +24,8 @@ from training_extras import make_tta_dataloader
 
 
 if __name__ == "__main__":
+    print('__main__')
+    
     parser = argparse.ArgumentParser()  # 解析命令行参数以选择配置、硬件、推理/训练模式等
     parser.add_argument("--config", type=str, default='Baseline',
                         help="config name in configs.py")
