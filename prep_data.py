@@ -28,9 +28,9 @@ from datasets import load_signal_cache  # 加载波形数据到内存缓存的�
 if __name__ == "__main__":
     # ========== 解析命令行参数 ==========
     parser = argparse.ArgumentParser(description='准备 G2Net 竞赛数据文件')
-    parser.add_argument("--root_dir", type=str, default='/kaggle/working/kaggle-g2net-public/input/',
+    parser.add_argument("--root_dir", type=str, default='/content/kaggle-g2net-public/input',
                         help="原始数据目录（包含 training_labels.csv 和 sample_submission.csv）")
-    parser.add_argument("--export_dir", type=str, default='/kaggle/working/kaggle-g2net-public/input/',
+    parser.add_argument("--export_dir", type=str, default='/content/kaggle-g2net-public/input',
                         help="输出目录（生成的 train.csv、test.csv 和缓存文件将保存在这里）")
     parser.add_argument("--hardware", type=str, default='A100',
                         help="硬件配置名称（从 configs.py 的 HW_CFG 中选择，决定缓存大小限制）")
@@ -65,6 +65,9 @@ if __name__ == "__main__":
     train['path'] = train['id'].apply(
         lambda x: root_dir/f'train/{x[0]}/{x[1]}/{x[2]}/{x}.npy'
     )
+    # 检查文件是否存在，只保留存在的文件
+    train = train[train['path'].apply(lambda x: Path(x).exists())]
+    LOGGER(f'训练集文件数量: {len(train)} (已过滤不存在的文件)')
     # 保存包含路径信息的训练集 CSV 文件
     train.to_csv(export_dir/'train.csv', index=False)
     
@@ -92,6 +95,9 @@ if __name__ == "__main__":
     test['path'] = test['id'].apply(
         lambda x: root_dir/f'test/{x[0]}/{x[1]}/{x[2]}/{x}.npy'
     )
+    # 检查文件是否存在，只保留存在的文件
+    test = test[test['path'].apply(lambda x: Path(x).exists())]
+    LOGGER(f'测试集文件数量: {len(test)} (已过滤不存在的文件)')
     # 保存包含路径信息的测试集 CSV 文件
     test.to_csv(export_dir/'test.csv', index=False)
     
