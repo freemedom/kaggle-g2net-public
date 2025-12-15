@@ -13,6 +13,7 @@ except ModuleNotFoundError:
 
 
 def freeze_module(module):
+    # 中文：冻结模型参数，关闭梯度计算（常用于微调时固定 backbone）
     for i, param in enumerate(module.parameters()):
         param.requires_grad = False
 
@@ -21,6 +22,7 @@ def fit_state_dict(state_dict, model):
     '''
     Ignore size mismatch when loading state_dict
     '''
+    # 中文：加载预训练权重时，遇到形状不匹配的参数直接跳过（打印提示）
     for name, param in model.named_parameters():
         if name in state_dict.keys():
             new_param = state_dict[name]
@@ -32,6 +34,10 @@ def fit_state_dict(state_dict, model):
 
 
 def get_device(arg):
+    # 中文：根据传入参数决定计算设备与 device_ids：
+    # - torch.device / xla_device：直接使用
+    # - None / list / tuple：自动选择可用 GPU，否则 CPU；XLA 优先
+    # - 字符串：直接转为 torch.device（'xla' 需环境支持 XLA）
     if isinstance(arg, torch.device) or \
         (XLA and isinstance(arg, xm.xla_device)):
         device = arg
@@ -72,6 +78,7 @@ def get_device(arg):
 
 
 def seed_everything(random_state=0, deterministic=False):
+    # 中文：设置 Python/NumPy/PyTorch 的随机种子，可选 deterministic 以获得可复现结果
     random.seed(random_state)
     os.environ['PYTHONHASHSEED'] = str(random_state)
     np.random.seed(random_state)
@@ -109,4 +116,5 @@ def get_gpu_memory():
 
 
 def get_time(time_format='%H:%M:%S'):
+    # 中文：返回当前本地时间的格式化字符串
     return time.strftime(time_format, time.localtime())

@@ -5,6 +5,8 @@ from ..utils import get_gpu_memory, get_time
 
 
 class TorchLogger:
+    # 中文：训练过程的通用日志器，既可打印到控制台也可写入文件，
+    #       并在每个 epoch 结束时格式化输出关键指标。
 
     def __init__(self, path,
                  log_items=[
@@ -12,6 +14,12 @@ class TorchLogger:
                      'train_monitor', 'valid_monitor', 'learning_rate', 'early_stop'],
                  verbose_eval=1,
                  stdout=True, file=False):
+        # 中文：
+        # - path：日志文件路径
+        # - log_items：需要输出的字段列表，支持字符串或列表
+        # - verbose_eval：隔多少个 epoch 输出一次
+        # - stdout：是否打印到控制台
+        # - file：是否写入文件
         if isinstance(log_items, str):
             log_items = log_items.split(' ')
         self.path = path
@@ -30,6 +38,7 @@ class TorchLogger:
 
 
     def __call__(self, log_str):
+        # 中文：即时日志接口，前缀时间戳后输出/写入
         log_str = get_time() + ' ' + log_str
         if self.stdout:
             print(log_str)
@@ -39,6 +48,7 @@ class TorchLogger:
 
     def after_epoch(self, env):
         ''' callback '''
+        # 中文：训练回调；根据 verbose_eval 控制输出频率，按 log_items 拼装日志
         epoch = env.state['epoch']
         if epoch % self.verbose_eval != 0:
             return
@@ -49,15 +59,18 @@ class TorchLogger:
                 log_str += f'Epoch {env.global_epoch:-{num_len}}/'
                 log_str += f'{env.max_epochs:-{num_len}}'
             elif item == 'early_stop':
+                # 中文：输出早停相关的 best_score 与连续未提升计数
                 best_score = env.state['best_score']
                 counter = env.state['patience']
                 if counter > 0:
                     log_str += f'best={best_score:.6f}(*{counter})'
             elif item == 'gpu_memory':
+                # 中文：查询每块 GPU 的显存占用，形如 (0:1234MB)(1:1200MB)
                 log_str += 'gpu_mem='
                 for gpu_i, gpu_mem in get_gpu_memory().items():
                     log_str += f'({gpu_i}:{int(gpu_mem)}MB)'
             else:
+                # 中文：其余字段直接从 env.state 取值并格式化
                 val = env.state[item]
                 if val is None:
                     continue
@@ -79,6 +92,7 @@ class TorchLogger:
 
 
 class DummyLogger:
+    # 中文：空实现的 Logger，用于禁用日志输出时占位
 
     def __init__(self, path):
         pass
