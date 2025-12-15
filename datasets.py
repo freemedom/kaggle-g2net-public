@@ -7,9 +7,7 @@ import torch.utils.data as D
 import matplotlib.pyplot as plt
 
 
-'''
-Data utilities
-'''
+'''数据工具函数与数据集定义'''
 def _load_signal(p):
     return np.load(p).astype(np.float32), p
 
@@ -17,18 +15,30 @@ def _load_signal(p):
 def load_signal_cache(paths, 
                       cache_limit=10, # in GB
                       n_jobs=1):
+    """预加载波形到内存缓存
+    
+    参数：
+        paths: 波形文件路径列表
+        cache_limit: 内存上限（GB），超过即提前返回（避免 OOM）
+        n_jobs: 进程数，大于1则多进程并行加载
+    返回：
+        cache: {路径: numpy.ndarray(float32)}，若超限则提前返回已加载部分
+    """
 
     size_in_gb = 0
     cache = {}
+    # 多进程并行加载
     if n_jobs > 1:
         with Pool(n_jobs) as pool:
             for s, p in pool.imap_unordered(_load_signal, paths):
-                cache[p] = s
-                size_in_gb += s.nbytes / (1024 ** 3)
+                cache[p] = s  # 保存到缓存
+                size_in_gb += s.nbytes / (1024 ** 3)  # 累计占用（GB）
+                # 超出内存上限则提前返回
                 if size_in_gb > cache_limit:
                     print(f'{len(cache)} items / {size_in_gb:.2f} GB cache loaded.')
                     return cache
     else:
+        # 单进程顺序加载
         for p in paths:
             s, _ = _load_signal(p)
             size_in_gb += s.nbytes / (1024 ** 3)
@@ -44,8 +54,16 @@ def load_signal_cache(paths,
 Dataset
 '''
 class G2NetDataset(D.Dataset):
-    '''
-    Amplitude stats
+    '''G2Net 数据集
+    
+    支持：
+    - 可选缓存（cache/test_cache）
+    - mixup（随机/只与负样本）
+    - 伪标签拼接（pseudo_label）
+    - 双路 transforms（transforms / transforms2）
+    - 返回索引/测试标记
+    
+        Amplitude stats
     [RAW]
     max of max: [4.6152116e-20, 4.2303907e-20, 1.1161064e-20]
     mean of max: [1.8438003e-20, 1.8434544e-20, 5.0978556e-21]
@@ -98,6 +116,7 @@ class G2NetDataset(D.Dataset):
             self.mixup = False
             self.pseudo_label = False
         if self.pseudo_label:
+            # 训练集与伪标签测试集拼接
             self.paths = np.concatenate([self.paths, test_paths])
             self.targets = np.concatenate([self.targets, test_targets])
             self.test_cache = test_cache
@@ -111,6 +130,7 @@ class G2NetDataset(D.Dataset):
     def __getitem__(self, index):
         signal, sub_signal, target = self._get_signal_target(index)
         if self.mixup:
+            # mixup 支持随机或仅与负样本混合
             if self.mixup_option == 'random':
                 idx2 = np.random.randint(0, len(self))
                 lam = np.random.beta(self.alpha, self.alpha)

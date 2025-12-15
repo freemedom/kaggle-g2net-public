@@ -75,7 +75,9 @@ if __name__ == "__main__":
         logger_path = f'{cfg.name}_{get_time("%y%m%d%H%M")}.log'
     LOGGER = TorchLogger(
         export_dir / logger_path, 
-        log_items=log_items, file=not opt.silent
+        log_items=log_items, 
+        stdout=True,  # 显式设置，确保在 Jupyter 中输出到控制台
+        file=not opt.silent
     )
     if opt.wait > 0:
         LOGGER(f'Waiting for {opt.wait} sec.')
