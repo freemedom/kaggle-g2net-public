@@ -57,7 +57,7 @@ class G2NetDataset(D.Dataset):
     '''G2Net 数据集
     
     支持：
-    - 可选缓存（cache/test_cache）
+    - 可选缓存（cache/test_cache）  test_cache好像是多余的
     - mixup（随机/只与负样本）
     - 伪标签拼接（pseudo_label）
     - 双路 transforms（transforms / transforms2）
@@ -94,6 +94,20 @@ class G2NetDataset(D.Dataset):
                  return_index=False,
                  return_test_index=False,
                  ):
+        """初始化数据集并可选拼接伪标签数据
+        
+        参数仅列要点：
+            paths/targets: 训练/验证的数据路径与标签
+            spectrogram: 可选频谱生成器（已废弃）
+            norm_factor: 每通道归一化因子（已废弃）
+            transforms/transforms2: 主/副路数据增强
+            cache/test_cache: 预加载缓存（路径->numpy）
+            mixup/mixup_alpha/mixup_option: mixup 开关、系数、策略
+            hard_label/lor_label: mixup 后标签二值化或逻辑或
+            is_test: 测试模式（禁用 mixup / pseudo_label）
+            pseudo_label + test_*: 启用伪标签时拼接测试集并标记来源
+            return_index/return_test_index: 是否返回样本索引/伪标签标记
+        """
         self.paths = paths
         self.targets = targets
         self.negative_idx = np.where(self.targets == 0)[0]
@@ -125,9 +139,26 @@ class G2NetDataset(D.Dataset):
             self.test_index = np.array([0]*len(self.paths)).astype(np.uint8)
 
     def __len__(self):
+        """返回数据集大小"""
         return len(self.paths)
     
     def __getitem__(self, index):
+        """读取单个样本，执行 mixup（若开启），并按需要附加索引标记
+        
+        处理流程：
+        1) 取样本：调用 _get_signal_target(index) 得到 signal/sub_signal/target
+        2) 可选 mixup：
+           - 选第二个样本：random 任意样本；negative 仅负样本（噪声弱化 lam=max(lam,1-lam)）
+           - lam ~ Beta(alpha, alpha)，按 lam 对主/副路信号线性混合
+           - 标签：
+             * lor_label=True 时逻辑或：t = t1 + t2 - t1*t2
+             * 否则按 lam 插值，若 hard_label 给定阈值再二值化
+        3) 组装输出：
+           - 无副路 => [signal, target]；有副路 => [signal, sub_signal, target]
+           - return_index=True 追加样本索引
+           - return_test_index=True 追加 test_index（伪标签来源标记 0/1）
+        返回 tuple
+        """
         signal, sub_signal, target = self._get_signal_target(index)
         if self.mixup:
             # mixup 支持随机或仅与负样本混合
@@ -160,6 +191,17 @@ class G2NetDataset(D.Dataset):
         return tuple(outputs)
         
     def _get_signal_target(self, index):
+        """加载波形、应用变换并返回 (signal1, signal2, target)
+        
+        流程：
+        1) 读取波形（优先缓存）：path = self.paths[index]；先查 cache，再查 test_cache，均无则 np.load(float32)
+        2) 可选归一化（已废弃）：若 norm_factor 存在，对每通道除以对应因子
+        3) 数据增强与双路输出：transforms 作用于 signal.copy() 得到 signal1；transforms2 作用于原始 signal 得到 signal2（可为 None）
+        4) 转 Tensor（已废弃标记）：若 signal1/2 为 ndarray，则转 torch.float32
+        5) 可选频谱生成（已废弃）：若 spectr 存在，对 signal1 做频谱变换
+        6) 生成标签：若 targets 提供，取对应标签 unsqueeze(0) 为 float32；否则返回 0 的占位张量 shape=(1,)
+        7) 返回 (signal1, signal2, target)，signal2 可能为 None
+        """
         path = self.paths[index]
         if self.cache is not None and path in self.cache.keys():
             signal = self.cache[path].copy()

@@ -76,7 +76,7 @@ if __name__ == "__main__":
     LOGGER = TorchLogger(
         export_dir / logger_path, 
         log_items=log_items, 
-        stdout=True,  # 显式设置，确保在 Jupyter 中输出到控制台
+        stdout=True,  # 显式设置，确保在 Jupyter 中输出到控制台   还是不行，不知道为什么，在jupyter里运行要最后运行完才显示输出
         file=not opt.silent
     )
     if opt.wait > 0:
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     for fold, (train_idx, valid_idx) in enumerate(fold_iter):
         # 中文：支持 limit_fold 只跑指定折；inference 模式直接跳过训练；skip_existing 避免覆盖已有模型
         
-        if opt.limit_fold >= 0 and fold != opt.limit_fold:
+        if opt.limit_fold >= 0 and fold != opt.limit_fold: # 只跑指定折 不跑其他折
             continue  # skip fold
 
         if opt.inference:
@@ -319,7 +319,7 @@ if __name__ == "__main__":
         del model, trainer, valid_data; gc.collect()
         torch.cuda.empty_cache()
 
-    if opt.limit_fold < 0:
+    if opt.limit_fold < 0: # 默认-1
         if opt.tta:
             np.save(export_dir/'outoffolds_tta', outoffolds)
             np.save(export_dir/'predictions_tta', predictions)

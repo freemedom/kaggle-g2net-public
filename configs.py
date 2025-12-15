@@ -56,8 +56,8 @@ class Baseline:
     seed = 2021  # 随机种子，确保可复现性
     train_path = INPUT_DIR/'train.csv'  # 训练集CSV路径
     test_path = INPUT_DIR/'test.csv'   # 测试集CSV路径
-    train_cache = None  # 训练集缓存路径（可选，用于加速数据加载）
-    test_cache = None   # 测试集缓存路径（可选）
+    train_cache = INPUT_DIR/'train_cache.pickle' # 训练集缓存路径（可选，用于加速数据加载）
+    test_cache = INPUT_DIR/'test_cache.pickle'   # 测试集缓存路径（可选）
     
     # 交叉验证配置
     cv = 3  # 5折交叉验证
