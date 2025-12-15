@@ -28,9 +28,9 @@ from datasets import load_signal_cache  # 加载波形数据到内存缓存的�
 if __name__ == "__main__":
     # ========== 解析命令行参数 ==========
     parser = argparse.ArgumentParser(description='准备 G2Net 竞赛数据文件')
-    parser.add_argument("--root_dir", type=str, default='/content/kaggle-g2net-public/input',
+    parser.add_argument("--root_dir", type=str, default='input',
                         help="原始数据目录（包含 training_labels.csv 和 sample_submission.csv）")
-    parser.add_argument("--export_dir", type=str, default='/content/kaggle-g2net-public/input',
+    parser.add_argument("--export_dir", type=str, default='input',
                         help="输出目录（生成的 train.csv、test.csv 和缓存文件将保存在这里）")
     parser.add_argument("--hardware", type=str, default='A100',
                         help="硬件配置名称（从 configs.py 的 HW_CFG 中选择，决定缓存大小限制）")
