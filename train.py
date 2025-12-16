@@ -157,10 +157,10 @@ if __name__ == "__main__":
         '''
         train_loader = D.DataLoader(
             train_data, batch_size=cfg.batch_size, shuffle=True,
-            num_workers=4, pin_memory=False)
+            num_workers=0, pin_memory=False)
         valid_loader = D.DataLoader(
             valid_data, batch_size=cfg.batch_size, shuffle=False,
-            num_workers=4, pin_memory=False)
+            num_workers=0, pin_memory=False)
 
         model = cfg.model(**cfg.model_params)  # 构建模型
 

@@ -85,7 +85,7 @@ class Baseline:
     
     # 训练超参数
     num_epochs = 5  # 训练轮数
-    batch_size = 64  # 批次大小
+    batch_size = 128  # 批次大小
     
     # 优化器配置
     optimizer = optim.Adam  # Adam优化器
