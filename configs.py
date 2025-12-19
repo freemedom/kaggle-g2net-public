@@ -277,39 +277,39 @@ class Nspec16(Resized08aug4):
     )
     """
     name = 'nspec_16'
-    # model_params = dict(
-    #     model_name='tf_efficientnet_b2',
-    #     pretrained=True,
-    #     num_classes=1,
-    #     spectrogram=ComplexMorletCWT,
-    #     spec_params=dict(
-    #         fs=2048, 
-    #         lower_freq=16, 
-    #         upper_freq=1024, 
-    #         wavelet_width=8,      # 更大的小波宽度
-    #         trainable_width=True, # 可训练的小波宽度（端到端优化）
-    #         stride=4,             # 更小的步长，提高时间分辨率
-    #         n_scales=128          # 128个尺度
-    #     ),
-    #     resize_img=(128, 1024),   # 更宽的时间维度（1024）
-    #     custom_classifier='gem',  # GeM池化（Generalized Mean Pooling）
-    #     upsample='bicubic'
-    # )
-    
     model_params = dict(
-        model_name='tf_efficientnet_b2',  # 更小的模型，训练更快
+        model_name='tf_efficientnet_b0',
         pretrained=True,
         num_classes=1,
-        spectrogram=CQT,
+        spectrogram=ComplexMorletCWT,
         spec_params=dict(
-            sr=2048, 
-            fmin=16,      # 降低最小频率到16 Hz
-            fmax=1024, 
-            hop_length=8  # 更小的跳跃长度，提高时间分辨率
+            fs=2048, 
+            lower_freq=16, 
+            upper_freq=1024, 
+            wavelet_width=8,      # 更大的小波宽度
+            trainable_width=True, # 可训练的小波宽度（端到端优化）
+            stride=4,             # 更小的步长，提高时间分辨率
+            n_scales=128          # 128个尺度
         ),
-        resize_img=(256, 512),  # 将频谱图调整到256x512
-        upsample='bicubic'  # 使用双三次插值上采样
+        resize_img=(128, 1024),   # 更宽的时间维度（1024）
+        custom_classifier='gem',  # GeM池化（Generalized Mean Pooling）
+        upsample='bicubic'
     )
+    
+    # model_params = dict(
+    #     model_name='tf_efficientnet_b2',  # 更小的模型，训练更快
+    #     pretrained=True,
+    #     num_classes=1,
+    #     spectrogram=CQT,
+    #     spec_params=dict(
+    #         sr=2048, 
+    #         fmin=16,      # 降低最小频率到16 Hz
+    #         fmax=1024, 
+    #         hop_length=8  # 更小的跳跃长度，提高时间分辨率
+    #     ),
+    #     resize_img=(256, 512),  # 将频谱图调整到256x512
+    #     upsample='bicubic'  # 使用双三次插值上采样
+    # )
     transforms = dict(
         train=Compose([
             Normalize(factors=[4.61e-20, 4.23e-20, 1.11e-20]),  # 归一化三个探测器
