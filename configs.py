@@ -278,7 +278,7 @@ class Nspec16(Resized08aug4):
     """
     name = 'nspec_16'
     model_params = dict(
-        model_name='tf_efficientnet_b7',  # tf_efficientnet_b0
+        model_name='tf_efficientnet_b4',  # tf_efficientnet_b0  # b7爆显存 换用80GB的a100 80G还是不行
         pretrained=True,
         num_classes=1,
         spectrogram=ComplexMorletCWT,
