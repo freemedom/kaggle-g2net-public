@@ -278,7 +278,7 @@ class Nspec16(Resized08aug4):
     """
     name = 'nspec_16'
     model_params = dict(
-        model_name='tf_efficientnet_b0',
+        model_name='tf_efficientnet_b7',  # tf_efficientnet_b0
         pretrained=True,
         num_classes=1,
         spectrogram=ComplexMorletCWT,
