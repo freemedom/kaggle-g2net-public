@@ -85,7 +85,9 @@ class Baseline:
     
     # 训练超参数
     num_epochs = 5  # 训练轮数
-    batch_size = 128  # 批次大小
+    batch_size = 128  # 批次大小  T4 16GB 64大概占满
+    # 128 T4 RuntimeError: CUDA out of memory. Tried to allocate 144.00 MiB (GPU 0; 14.74 GiB total capacity; 13.38 GiB already allocated; 64.12 MiB free; 13.59 GiB reserved in total by PyTorch)
+    # 128 A100 40g 显存占29g 
     
     # 优化器配置
     optimizer = optim.Adam  # Adam优化器
@@ -93,6 +95,14 @@ class Baseline:
     
     # 学习率调度器配置
     scheduler = CosineAnnealingWarmRestarts  # 余弦退火带重启
+    # 参数说明（当前配置：T_0=5, T_mult=1, eta_min=1e-6）：
+    # - T_0=5：首个周期长度 5 个 epoch，LR 在 5 个 epoch 内从初始值余弦下降到 eta_min
+    # - T_mult=1：周期倍增因子；=1 表示每个周期都保持 5（如设 2 则 5→10→20…）
+    # - eta_min=1e-6：每个周期的最低学习率，不降到 0
+    # - initial_lr：由优化器设置（如 Adam lr=2e-4），余弦在 [initial_lr, eta_min] 之间摆动
+    # 工作方式：每个周期内 LR 按余弦平滑下降到 eta_min，周期末瞬间重启回初始 LR，再进入下个周期。
+    # 这种周期性“脉冲”有助于跳出局部最优；因 T_mult=1，当前设置每 5 个 epoch 重启一次。
+    # 工作方式：LR 下降到 0 后，突然瞬间跳回最大值，然后再次下降。就像周期性的“脉冲”。 目的：那个瞬间跳回（Restart）是为了把模型从局部最优解中“踢”出来，让它去寻找更好的坑。
     scheduler_params = dict(T_0=5, T_mult=1, eta_min=1e-6)  # 初始周期5，最小学习率1e-6
     scheduler_target = None  # 调度器监控指标（None表示监控loss）
     batch_scheduler = False  # 是否每个batch更新学习率（False表示每个epoch更新）
@@ -172,10 +182,19 @@ class Nspec12(Resized08aug4):
     """
     使用连续小波变换(CWT)的配置 - Nspec12
     
-    主要特点：
-    - 使用ComplexMorletCWT替代CQT（小波变换对瞬态信号更敏感）
-    - 添加带通滤波器（12-512 Hz）
-    - 256个尺度的小波变换
+    命名规律（Nspec 系列）：
+    - NspecXX：Neural Spectrogram 的简写 + 数字编号
+    - Nspec12：下限带通频率为 12 Hz 的 CWT 配置
+    - Nspec16：下限带通频率为 16 Hz（或其他与 16 相关的关键超参）
+    - Nspec21 / 22 / 23 等：多为实验编号或特定参数组合（如不同 backbone / 频谱实现）
+    
+    Nspec12 主要特点：
+    - 使用 ComplexMorletCWT 替代 CQT（小波变换对瞬态信号更敏感）
+    - 带通滤波器：12–512 Hz（只保留这一频段的引力波信号）
+    - 256 个小波尺度（较高的频率分辨率）
+    - 使用 EfficientNet-B2 作为频谱图 backbone
+    
+    总结：Nspec12 表示「使用 CWT 的频谱模型 + 带通下限为 12 Hz」的一组配置。
     """
     name = 'nspec_12'
     model_params = dict(
@@ -240,25 +259,56 @@ class Nspec16(Resized08aug4):
     - 使用GeM池化（Generalized Mean Pooling）替代平均池化
     - 更高的时间分辨率（stride=4）
     - 图像尺寸128x1024（更宽的时间维度）
-    """
-    name = 'nspec_16'
-    model_params = dict(
-        model_name='tf_efficientnet_b2',
+    
+    
+        model_params = dict(
+        model_name='tf_efficientnet_b2',  # 更小的模型，训练更快
         pretrained=True,
         num_classes=1,
-        spectrogram=ComplexMorletCWT,
+        spectrogram=CQT,
         spec_params=dict(
-            fs=2048, 
-            lower_freq=16, 
-            upper_freq=1024, 
-            wavelet_width=8,      # 更大的小波宽度
-            trainable_width=True, # 可训练的小波宽度（端到端优化）
-            stride=4,             # 更小的步长，提高时间分辨率
-            n_scales=128          # 128个尺度
+            sr=2048, 
+            fmin=16,      # 降低最小频率到16 Hz
+            fmax=1024, 
+            hop_length=8  # 更小的跳跃长度，提高时间分辨率
         ),
-        resize_img=(128, 1024),   # 更宽的时间维度（1024）
-        custom_classifier='gem',  # GeM池化（Generalized Mean Pooling）
-        upsample='bicubic'
+        resize_img=(256, 512),  # 将频谱图调整到256x512
+        upsample='bicubic'  # 使用双三次插值上采样
+    )
+    """
+    name = 'nspec_16'
+    # model_params = dict(
+    #     model_name='tf_efficientnet_b2',
+    #     pretrained=True,
+    #     num_classes=1,
+    #     spectrogram=ComplexMorletCWT,
+    #     spec_params=dict(
+    #         fs=2048, 
+    #         lower_freq=16, 
+    #         upper_freq=1024, 
+    #         wavelet_width=8,      # 更大的小波宽度
+    #         trainable_width=True, # 可训练的小波宽度（端到端优化）
+    #         stride=4,             # 更小的步长，提高时间分辨率
+    #         n_scales=128          # 128个尺度
+    #     ),
+    #     resize_img=(128, 1024),   # 更宽的时间维度（1024）
+    #     custom_classifier='gem',  # GeM池化（Generalized Mean Pooling）
+    #     upsample='bicubic'
+    # )
+    
+    model_params = dict(
+        model_name='tf_efficientnet_b2',  # 更小的模型，训练更快
+        pretrained=True,
+        num_classes=1,
+        spectrogram=CQT,
+        spec_params=dict(
+            sr=2048, 
+            fmin=16,      # 降低最小频率到16 Hz
+            fmax=1024, 
+            hop_length=8  # 更小的跳跃长度，提高时间分辨率
+        ),
+        resize_img=(256, 512),  # 将频谱图调整到256x512
+        upsample='bicubic'  # 使用双三次插值上采样
     )
     transforms = dict(
         train=Compose([
